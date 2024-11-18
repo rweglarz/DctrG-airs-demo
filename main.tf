@@ -31,6 +31,40 @@ provider "google" {
   zone    = local.zone
 }
 
+# Basic services
+resource "google_project_service" "basic" {
+  for_each = toset([
+    "compute.googleapis.com",
+    "logging.googleapis.com",
+    "cloudbilling.googleapis.com",
+    "storage.googleapis.com"
+  ])
+  
+  project = "airs-demo-emeal"
+  service = each.key
+  disable_on_destroy = false
+  depends_on = [google_project_service.core]
+}
+
+# Advanced services
+resource "google_project_service" "advanced" {
+  for_each = toset([
+    "apikeys.googleapis.com",
+    "notebooks.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "dataplex.googleapis.com",
+    "datacatalog.googleapis.com",
+    "visionai.googleapis.com",
+    "aiplatform.googleapis.com",
+    "cloudasset.googleapis.com"
+  ])
+  
+  project = "airs-demo-emeal"
+  service = each.key
+  disable_on_destroy = false
+  depends_on = [google_project_service.basic]
+}
+
 # -------------------------------------------------------------------------------------
 # Create GSC bucket & log router for VPC flow logs
 # -------------------------------------------------------------------------------------
