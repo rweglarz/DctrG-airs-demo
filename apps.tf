@@ -52,7 +52,7 @@ resource "google_compute_instance" "ai_vm_unprotected" {
 }
 
 
-resource "google_compute_instance" "ai-vm-protected" {
+resource "google_compute_instance" "ai_vm_protected" {
   name         = "ai-vm-protected"
   machine_type = "e2-standard-4"
   zone         = local.zone
