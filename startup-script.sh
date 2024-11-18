@@ -56,13 +56,22 @@ else
     exit 1
 fi
 
+if [ -f "gemini-app.py" ]; then
+    cp gemini-app.py /usr/bin/
+    chmod +x /usr/bin/gemini-app.py
+else
+    echo "Error: gemini-app.py not found"
+    exit 1
+fi
+
 if [[ "$INSTANCE_NAME" != *"unprotected"* ]]; then
     echo "Configuring protected instance..."
     mv bank-app-protected.py bank-app.py
 fi
 
-# Create service file with environment variables
-echo "[$(date)] Creating service file..."
+# Create service files with environment variables
+echo "[$(date)] Creating service files..."
+
 cat > /etc/systemd/system/bank-app.service << 'EOL'
 [Unit]
 Description=Bank App Service
@@ -81,11 +90,32 @@ WorkingDirectory=/home/paloalto/apps
 WantedBy=multi-user.target
 EOL
 
+cat > /etc/systemd/system/gemini-app.service << 'EOL'
+[Unit]
+Description=Gemini App Service
+After=network.target
+
+[Service]
+# Environment=SSL_CERT_FILE=/etc/ssl/certs/root_ca.pem
+# Environment=REQUESTS_CA_BUNDLE=/etc/ssl/certs/root_ca.pem
+# Environment=GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/etc/ssl/certs/root_ca.pem
+ExecStart=/usr/bin/gemini-app.sh
+Restart=always
+User=root
+WorkingDirectory=/home/paloalto/apps
+
+[Install]
+WantedBy=multi-user.target
+EOL
+
 # Reload systemd and start service
-echo "[$(date)] Starting service..."
+echo "[$(date)] Starting services..."
 systemctl daemon-reload
 systemctl enable bank-app.service
+systemctl enable gemini-app.service
 systemctl start bank-app.service
+systemctl start gemini-app.service
 systemctl status bank-app.service
+systemctl status gemini-app.service
 
 echo "[$(date)] Startup script completed"
