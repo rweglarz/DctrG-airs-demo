@@ -43,7 +43,6 @@ resource "google_project_service" "basic" {
   project = "airs-demo-emeal"
   service = each.key
   disable_on_destroy = false
-  depends_on = [google_project_service.core]
 }
 
 # Advanced services
