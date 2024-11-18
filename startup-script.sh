@@ -57,7 +57,7 @@ else
 fi
 
 if [ -f "gemini-app.py" ]; then
-    cp gemini-app.py /usr/bin/
+    cp gemini-app.sh /usr/bin/
     chmod +x /usr/bin/gemini-app.py
 else
     echo "Error: gemini-app.py not found"
