@@ -13,9 +13,9 @@ output "bank_app_protected" {
   value = "http://${google_compute_instance.ai_vm_protected.network_interface[0].access_config[0].nat_ip}:80"
 }
 
-# output "gemini_app" {
-#   value = "http://${google_compute_instance.ai_vm_unprotected.network_interface[0].access_config[0].nat_ip}:8080" 
-# }
+output "gemini_app" {
+  value = "http://${google_compute_instance.ai_vm_unprotected.network_interface[0].access_config[0].nat_ip}:8080" 
+}
 
 output "SET_ENV_VARS" {
   value = <<EOF
