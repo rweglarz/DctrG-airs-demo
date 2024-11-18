@@ -10,7 +10,7 @@ output "bank_app_unprotected" {
 }
 
 output "bank_app_protected" {
-  value = "http://${google_compute_instance.ai_vm_protected.network_interface[0].access_config[0].nat_ip}:8888"
+  value = "http://${google_compute_instance.ai_vm_protected.network_interface[0].access_config[0].nat_ip}:80"
 }
 
 output "gemini_app" {
