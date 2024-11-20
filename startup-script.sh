@@ -64,9 +64,14 @@ else
     exit 1
 fi
 
-if [[ "$INSTANCE_NAME" != *"unprotected"* ]]; then
+if [[ "$INSTANCE_NAME" == "ai-vm-unprotected" ]]; then
     echo "Configuring protected instance..."
     mv bank-app-protected.py bank-app.py
+fi
+
+if [[ "$INSTANCE_NAME" == "ai-vm-api" ]]; then
+    echo "Configuring api instance..."
+    mv bank-app-api.py bank-app.py
 fi
 
 # Create service files with environment variables

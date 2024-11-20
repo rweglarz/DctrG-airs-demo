@@ -84,3 +84,36 @@ resource "google_compute_instance" "ai_vm_protected" {
     is-protected = "true"
   }
 }
+
+resource "google_compute_instance" "ai_vm_api" {
+  name         = "ai-vm-api"
+  machine_type = "e2-standard-4"
+  zone         = local.zone
+
+  boot_disk {
+    initialize_params {
+      image = local.ai_vm_image
+    }
+  }
+
+  network_interface {
+    subnetwork = module.vpc_gce.subnets_self_links[0]
+    network_ip = cidrhost(local.gce_subnet_cidr, 12)
+    access_config {}
+  }
+
+  service_account {
+    email = google_service_account.ai.email
+    scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+  }
+
+  metadata_startup_script = file("${path.module}/startup-script.sh")
+
+  // Required metadata. The values are used to authenticate to vertex APIs.
+  metadata = {
+    project-id    = local.project_id
+    region        = local.region
+  }
+}
