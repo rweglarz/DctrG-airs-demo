@@ -19,7 +19,14 @@ variable "gcp_zone" {
 
 }
 
-variable "ai_vm_image" {
-  description = "URL to open AI image."
-  type        = string
+variable "fw_trust_vpc" {
+  type = string
+}
+
+variable "airs_api_key" {
+  type = string
+}
+
+variable "airs_profile_name" {
+  type = string
 }

@@ -20,6 +20,38 @@ echo "[$(date)] Setting up virtual environment..."
 python3 -m venv /root/venv
 source /root/venv/bin/activate
 
+
+cat <<EOF > /etc/ssl/certs/root_ca.pem
+-----BEGIN CERTIFICATE-----
+MIIE1jCCAr6gAwIBAgIFAIKd1VUwDQYJKoZIhvcNAQELBQAwHTEbMBkGA1UEAxMS
+UldFIFNDTSBVUyBST09UIENBMB4XDTI0MTEyMTE2MTQyOVoXDTI4MTIzMDE2MTQy
+OVowHTEbMBkGA1UEAxMSUldFIFNDTSBVUyBST09UIENBMIICIjANBgkqhkiG9w0B
+AQEFAAOCAg8AMIICCgKCAgEAqn/jcdEXGUmMaFWYCOmt+nMMxptir6KTxhH94yg1
+lXtLQRzpNn1RkwJLu7nRKq6v0B6kdVYlde5Yb/v0m6tytzkxokQa0Eb1dbLwts2J
+teMRxx2/5cUK2G5+DH5/AFllRBjMm1KtrJB92UxRiO/NDZ+q6CID/jtSw+CXlSb1
+QGo/xXbSWxunun4BG9GuQskYDYZeUMnuFL4vBQzsIqVMqHSoKjzHn+DvUARE/4ls
+bXxOC1qkkQKqZDdeoYlBsKTOC0sP9nTnM6F8ChmCthb8+Rqj7u/eBgi7Ey3yfO28
+9b7mT5u2CXdVeKT3y+DCqxdoKYT+6f/jcnOfLnuZQwxA5SzOafS/dU45fln2J2vn
+wMiIXxJESq4OqjVEYjkjVMGcsZz31yq2Du5dz3xnEtTe3rY4h7L7dEBlWwhxTh33
+Lbt8/W4wfoZBFK/FwjmpGxpuCnh/SUb51WPX2Iexaja59hq/iFYVCn8oUvqjRV9f
+APCLXUrkQVpdIaOmVnGDZauURvbm39xK9iB1r3jrWj9BoXijArVAwApPlIyglxfj
+JmhbuepG+J1vTe3u+iYC8hi3CDod7TcnfInPjtZawlFqbSBIiZUyxZBJ+z2U6CWb
+GpQHPrnAUuiq8+Hb/KrYB4TT1DHLkIZEzAICi/0mbGRrQqk0FIkKpprJkkysIzqk
+ztcCAwEAAaMdMBswDAYDVR0TBAUwAwEB/zALBgNVHQ8EBAMCAgQwDQYJKoZIhvcN
+AQELBQADggIBAGxnjwjwMDuXAmBVslw6fBa5CI5of5zUGFyf8i8pRo+N5IhetWpr
+W6iIOwJhrOBTfAoawEUEAAcIC9dgzMOWG9osRygYEjQv7If5LmHaWXDMxEp4/s4F
+c25PR1MQwU6Mrc+lLcAbXyzcP1i9YnS8stYOlwk8JN/lwmasEWTRdGSrLVTURcXd
+WcsrUkO7J5FeaDh+g7E7sfg1XR/SBFL+JXCwhWGSb/6OiYOky/XoiokbUnnQzvTy
+IN3dlANH84jOsUrbNmFCqJMoQCLSMVnkL2xpvS82XRqT+IZNgXoct15DprmzRJ8v
+YlN1dfsFKOv9kP1BXeZQ5fNudm8Osu4nhB6M50e4tnJF50rjx4yLLPU3ODkLrDUe
+qXP/UgaCFR29g4cy/6My1rsxXWfNP13isDK3QyKOvRC9uul04Qa6OwEdQIzL7ocj
+KdEIu+N4WAmK89YXUHgV7TvtFEGZ3wl6DSbU0tWeuVUluh7eN99JQarEgE/Dfmb6
+E80h7HoYgYPpNsnD3gvP9aWr0Ynpx8s9GZMrZo9pwmYwP423DBS7F1jhx3joMBQJ
+FsNXcC/kTC/acYTSFXN7JjI0Vz763fM2wZxafcqnldoWHB5A9zXt4SxtUwe0bHZr
+f9bXuIb/izwiA2K8Va3EI2COsm9+aXn2jA41zvihL1ydCij2c1Enz2w4
+-----END CERTIFICATE-----
+EOF
+
 # Set up environment variables
 echo "[$(date)] Setting up environment variables..."
 echo "export SSL_CERT_FILE=/etc/ssl/certs/root_ca.pem" >> /root/.bashrc
@@ -64,9 +96,14 @@ else
     exit 1
 fi
 
-if [[ "$INSTANCE_NAME" == "ai-vm-unprotected" ]]; then
+if [[ "$INSTANCE_NAME" == "ai-vm-protected" ]]; then
     echo "Configuring protected instance..."
     mv bank-app-protected.py bank-app.py
+fi
+
+if [[ "$INSTANCE_NAME" == "ai-vm-unprotected" ]]; then
+    echo "Configuring protected instance..."
+    mv bank-app-unprotected.py bank-app.py
 fi
 
 if [[ "$INSTANCE_NAME" == "ai-vm-api" ]]; then
@@ -83,9 +120,9 @@ Description=Bank App Service
 After=network.target
 
 [Service]
-# Environment=SSL_CERT_FILE=/etc/ssl/certs/root_ca.pem
-# Environment=REQUESTS_CA_BUNDLE=/etc/ssl/certs/root_ca.pem
-# Environment=GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/etc/ssl/certs/root_ca.pem
+Environment=SSL_CERT_FILE=/etc/ssl/certs/root_ca.pem
+Environment=REQUESTS_CA_BUNDLE=/etc/ssl/certs/root_ca.pem
+Environment=GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/etc/ssl/certs/root_ca.pem
 ExecStart=/usr/bin/bank-app.sh
 Restart=always
 User=root

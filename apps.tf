@@ -1,3 +1,8 @@
+data "google_compute_image" "ubuntu" {
+  family  = "ubuntu-2004-lts"
+  project = "ubuntu-os-cloud"
+}
+
 # -------------------------------------------------------------------------------------
 # Create VMs
 # -------------------------------------------------------------------------------------
@@ -25,7 +30,7 @@ resource "google_compute_instance" "ai_vm_unprotected" {
 
   boot_disk {
     initialize_params {
-      image = local.ai_vm_image
+      image = data.google_compute_image.ubuntu.id
     }
   }
 
@@ -49,7 +54,9 @@ resource "google_compute_instance" "ai_vm_unprotected" {
     project-id  = local.project_id
     region      = local.region
   }
+  tags = ["route-dg"]
 }
+
 
 resource "google_compute_instance" "ai_vm_protected" {
   name         = "ai-vm-protected"
@@ -58,7 +65,7 @@ resource "google_compute_instance" "ai_vm_protected" {
 
   boot_disk {
     initialize_params {
-      image = local.ai_vm_image
+      image = data.google_compute_image.ubuntu.id
     }
   }
 
@@ -92,7 +99,7 @@ resource "google_compute_instance" "ai_vm_api" {
 
   boot_disk {
     initialize_params {
-      image = local.ai_vm_image
+      image = data.google_compute_image.ubuntu.id
     }
   }
 
@@ -115,5 +122,18 @@ resource "google_compute_instance" "ai_vm_api" {
   metadata = {
     project-id    = local.project_id
     region        = local.region
+    airs-api-key  = var.airs_api_key
+    airs-profile-name = var.airs_profile_name
   }
+  tags = ["route-dg"]
 }
+
+resource "google_compute_route" "dg-default" {
+  name        = "dg-dg-route"
+  dest_range  = "0.0.0.0/0"
+  network     = module.vpc_gce.network_id
+  next_hop_gateway = "default-internet-gateway"
+  priority    = 100
+  tags = ["route-dg"]
+}
+
