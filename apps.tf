@@ -3,6 +3,13 @@ data "google_compute_image" "ubuntu" {
   project = "ubuntu-os-cloud"
 }
 
+locals {
+  app_template = {
+    decrypt_cert = file(var.decrypt_cert_path)
+    apps_github  = var.apps_github
+  }
+}
+
 # -------------------------------------------------------------------------------------
 # Create VMs
 # -------------------------------------------------------------------------------------
@@ -47,7 +54,7 @@ resource "google_compute_instance" "ai_vm_unprotected" {
     ]
   }
 
-  metadata_startup_script = file("${path.module}/startup-script.sh")
+  metadata_startup_script = templatefile("${path.module}/startup-script.sh", local.app_template)
 
   // Required metadata. The values are used to authenticate to vertex APIs.
   metadata = {
@@ -82,7 +89,7 @@ resource "google_compute_instance" "ai_vm_protected" {
     ]
   }
 
-  metadata_startup_script = file("${path.module}/startup-script.sh")
+  metadata_startup_script = templatefile("${path.module}/startup-script.sh", local.app_template)
 
   // Required metadata. The values are used to authenticate to vertex APIs.
   metadata = {
@@ -116,7 +123,7 @@ resource "google_compute_instance" "ai_vm_api" {
     ]
   }
 
-  metadata_startup_script = file("${path.module}/startup-script.sh")
+  metadata_startup_script = templatefile("${path.module}/startup-script.sh", local.app_template)
 
   // Required metadata. The values are used to authenticate to vertex APIs.
   metadata = {

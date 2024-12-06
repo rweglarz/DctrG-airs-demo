@@ -30,3 +30,15 @@ variable "airs_api_key" {
 variable "airs_profile_name" {
   type = string
 }
+
+variable "decrypt_cert_path" {
+  type = string
+}
+
+variable "apps_github" {
+  default = {
+    path = "https://github.com/DctrG/DctrG-apps.git"
+    path = "master"
+  }
+}
+
