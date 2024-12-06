@@ -61,7 +61,7 @@ resource "google_compute_instance" "ai_vm_unprotected" {
     project-id  = local.project_id
     region      = local.region
   }
-  tags = ["route-dg"]
+  tags = ["direct-internet"]
 }
 
 
@@ -132,7 +132,7 @@ resource "google_compute_instance" "ai_vm_api" {
     airs-api-key  = var.airs_api_key
     airs-profile-name = var.airs_profile_name
   }
-  tags = ["route-dg"]
+  tags = ["direct-internet"]
 }
 
 resource "google_compute_route" "dg-default" {
@@ -141,6 +141,6 @@ resource "google_compute_route" "dg-default" {
   network     = module.vpc_gce.network_id
   next_hop_gateway = "default-internet-gateway"
   priority    = 100
-  tags = ["route-dg"]
+  tags = ["direct-internet"]
 }
 
