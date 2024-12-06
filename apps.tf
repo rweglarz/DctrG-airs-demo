@@ -1,3 +1,15 @@
+data "google_compute_image" "ubuntu" {
+  family  = "ubuntu-2004-lts"
+  project = "ubuntu-os-cloud"
+}
+
+locals {
+  app_template = {
+    decrypt_cert = file(var.decrypt_cert_path)
+    apps_github  = var.apps_github
+  }
+}
+
 # -------------------------------------------------------------------------------------
 # Create VMs
 # -------------------------------------------------------------------------------------
@@ -25,7 +37,7 @@ resource "google_compute_instance" "ai_vm_unprotected" {
 
   boot_disk {
     initialize_params {
-      image = local.ai_vm_image
+      image = data.google_compute_image.ubuntu.id
     }
   }
 
@@ -42,14 +54,16 @@ resource "google_compute_instance" "ai_vm_unprotected" {
     ]
   }
 
-  metadata_startup_script = file("${path.module}/startup-script.sh")
+  metadata_startup_script = templatefile("${path.module}/startup-script.sh", local.app_template)
 
   // Required metadata. The values are used to authenticate to vertex APIs.
   metadata = {
     project-id  = local.project_id
     region      = local.region
   }
+  tags = ["direct-internet"]
 }
+
 
 resource "google_compute_instance" "ai_vm_protected" {
   name         = "ai-vm-protected"
@@ -58,7 +72,7 @@ resource "google_compute_instance" "ai_vm_protected" {
 
   boot_disk {
     initialize_params {
-      image = local.ai_vm_image
+      image = data.google_compute_image.ubuntu.id
     }
   }
 
@@ -75,7 +89,7 @@ resource "google_compute_instance" "ai_vm_protected" {
     ]
   }
 
-  metadata_startup_script = file("${path.module}/startup-script.sh")
+  metadata_startup_script = templatefile("${path.module}/startup-script.sh", local.app_template)
 
   // Required metadata. The values are used to authenticate to vertex APIs.
   metadata = {
@@ -92,7 +106,7 @@ resource "google_compute_instance" "ai_vm_api" {
 
   boot_disk {
     initialize_params {
-      image = local.ai_vm_image
+      image = data.google_compute_image.ubuntu.id
     }
   }
 
@@ -109,11 +123,24 @@ resource "google_compute_instance" "ai_vm_api" {
     ]
   }
 
-  metadata_startup_script = file("${path.module}/startup-script.sh")
+  metadata_startup_script = templatefile("${path.module}/startup-script.sh", local.app_template)
 
   // Required metadata. The values are used to authenticate to vertex APIs.
   metadata = {
     project-id    = local.project_id
     region        = local.region
+    airs-api-key  = var.airs_api_key
+    airs-profile-name = var.airs_profile_name
   }
+  tags = ["direct-internet"]
 }
+
+resource "google_compute_route" "dg-default" {
+  name        = "dg-dg-route"
+  dest_range  = "0.0.0.0/0"
+  network     = module.vpc_gce.network_id
+  next_hop_gateway = "default-internet-gateway"
+  priority    = 100
+  tags = ["direct-internet"]
+}
+

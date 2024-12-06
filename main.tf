@@ -7,9 +7,8 @@ locals {
   region                   = var.gcp_region
   zone                     = var.gcp_zone
   airs_name                = "airs-${substr(random_string.main.result, 0, 4)}"
-  ai_vm_image              = var.ai_vm_image
-  gce_subnet_name          = "gce-vpc-${local.region}-subnet"
-  gce_subnet_cidr          = "10.1.0.0/24"
+  gce_subnet_name          = "gce-vpc-dg-${local.region}-subnet"
+  gce_subnet_cidr          = "10.2.0.0/24"
 }
 
 # -------------------------------------------------------------------------------------
@@ -39,8 +38,8 @@ resource "google_project_service" "basic" {
     "cloudbilling.googleapis.com",
     "storage.googleapis.com"
   ])
-  
-  project = "airs-demo-emeal"
+
+  project = var.gcp_project_id
   service = each.key
   disable_on_destroy = false
 }
@@ -57,8 +56,8 @@ resource "google_project_service" "advanced" {
     "aiplatform.googleapis.com",
     "cloudasset.googleapis.com"
   ])
-  
-  project = "airs-demo-emeal"
+
+  project = var.gcp_project_id
   service = each.key
   disable_on_destroy = false
   depends_on = [google_project_service.basic]
@@ -75,31 +74,31 @@ resource "random_string" "main" {
   special     = false
 }
 
-resource "google_storage_bucket" "gcs" {
-  name          = "flow-logs-${random_string.main.result}"
-  location      = "US"
-  force_destroy = true
-}
+#resource "google_storage_bucket" "gcs" {
+#  name          = "flow-logs-${random_string.main.result}"
+#  location      = "US"
+#  force_destroy = true
+#}
 
-resource "google_logging_project_sink" "log_router" {
-  name                   = "flow-logs-sink"
-  destination            = "storage.googleapis.com/${google_storage_bucket.gcs.name}"
-  filter                 = "(logName =~ \"logs/cloudaudit.googleapis.com%2Fdata_access\" AND protoPayload.methodName:(\"google.cloud.aiplatform.\")) OR ((logName=\"projects/${local.project_id}/logs/compute.googleapis.com%2Fvpc_flows\"))"
-  unique_writer_identity = true
+#resource "google_logging_project_sink" "log_router" {
+#  name                   = "flow-logs-sink"
+#  destination            = "storage.googleapis.com/${google_storage_bucket.gcs.name}"
+#  filter                 = "(logName =~ \"logs/cloudaudit.googleapis.com%2Fdata_access\" AND protoPayload.methodName:(\"google.cloud.aiplatform.\")) OR ((logName=\"projects/${local.project_id}/logs/compute.googleapis.com%2Fvpc_flows\"))"
+#  unique_writer_identity = true
+#
+#  depends_on = [
+#    google_storage_bucket.gcs
+#  ]
+#}
 
-  depends_on = [
-    google_storage_bucket.gcs
-  ]
-}
-
-resource "google_project_iam_binding" "gcs-bucket-writer" {
-  project = local.project_id
-  role    = "roles/storage.objectCreator"
-
-  members = [
-    google_logging_project_sink.log_router.writer_identity
-  ]
-}
+#resource "google_project_iam_binding" "gcs-bucket-writer" {
+#  project = local.project_id
+#  role    = "roles/storage.objectCreator"
+#
+#  members = [
+#    google_logging_project_sink.log_router.writer_identity
+#  ]
+#}
 
 resource "google_project_iam_audit_config" "all_services" {
   project = local.project_id
@@ -127,8 +126,10 @@ module "vpc_gce" {
   source       = "terraform-google-modules/network/google"
   version      = "~> 4.0"
   project_id   = local.project_id
-  network_name = "gce-vpc"
+  network_name = "gce-vpc-dg"
   routing_mode = "GLOBAL"
+
+  delete_default_internet_gateway_routes = true
 
   subnets = [
     {
@@ -148,7 +149,12 @@ module "vpc_gce" {
       name      = "gce-vpc-ingress-all"
       direction = "INGRESS"
       priority  = "100"
-      ranges    = ["0.0.0.0/0"]
+      ranges    = [
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "165.85.0.0/16",
+        "35.235.240.0/20",
+      ]
       allow = [
         {
           protocol = "all"
@@ -158,7 +164,31 @@ module "vpc_gce" {
     }
   ]
   depends_on = [
-    google_storage_bucket.gcs
+#    google_storage_bucket.gcs
+  ]
+}
+
+
+
+
+
+resource "google_compute_network_peering" "to-fw" {
+  name                 = "airs-dg-to-fw"
+  network              = module.vpc_gce.network_id
+  peer_network         = var.fw_trust_vpc
+  import_custom_routes = true
+  export_custom_routes = false
+}
+
+resource "google_compute_network_peering" "from-fw" {
+  name                 = "airs-dg-from-fw"
+  network              = var.fw_trust_vpc
+  peer_network         = module.vpc_gce.network_id
+  import_custom_routes = false
+  export_custom_routes = true
+
+  depends_on = [
+    google_compute_network_peering.to-fw
   ]
 }
 
