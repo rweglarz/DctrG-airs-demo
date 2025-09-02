@@ -37,8 +37,8 @@ variable "decrypt_cert_path" {
 
 variable "apps_github" {
   default = {
-    path = "https://github.com/DctrG/DctrG-apps.git"
-    path = "master"
+    path   = "https://github.com/DctrG/apps.git"
+    branch = "main"
   }
 }
 
